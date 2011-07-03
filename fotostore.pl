@@ -21,6 +21,8 @@ my $IMAGE_DIR  = app->static->root . $IMAGE_BASE;
 # Create directory if not exists
 unless (-d $IMAGE_DIR) {
     mkpath $IMAGE_DIR or die "Cannot create directory: $IMAGE_DIR";
+}
+unless (-d $IMAGE_DIR.$ORIG_DIR) {
     mkpath $IMAGE_DIR.$ORIG_DIR or die "Cannot create directory: $IMAGE_DIR$ORIG_DIR";
 }
 

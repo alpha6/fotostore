@@ -270,6 +270,12 @@ __DATA__
     <!-- CSS adjustments for browsers with JavaScript disabled -->
     <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-noscript.css"></noscript>
     <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui-noscript.css"></noscript>
+    <style>
+    .bar {
+        height: 18px;
+        background: green;
+    }
+</style>
   </head>
   <body>
     <h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
@@ -289,10 +295,21 @@ __DATA__
                     $.each(data.result.files, function (index, file) {
                         $('<p/>').text(file.name).appendTo('#lastUploadLog');
                     });
+                },
+                sequentialUploads: true,
+                progressall: function (e, data) {
+                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    $('#progress .bar').css(
+                        'width',
+                        progress + '%'
+                    );
                 }
             });
         });
         </script>
+        <div id="progress">
+            <div class="bar" style="width: 0%;"></div>
+        </div>
         <div id="lastUploadLog"></div>
 <!-- display images from server -->
         <div>

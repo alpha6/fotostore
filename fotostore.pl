@@ -166,15 +166,36 @@ post '/upload' => (authenticated => 1)=> sub {
    
     my $imager = Imager->new();
     $imager->read(file => $image_file) or die $imager->errstr;
+    
+    #http://sylvana.net/jpegcrop/exif_orientation.html
+    my $rotation_angle = $imager->tags( name => "exif_orientation");
+    $self->app->log->info("Rotation angle [".$rotation_angle."]");
 
     for my $scale (@scale_width) {
+        if ($rotation_angle == 3) {
+            $imager = $imager->rotate(degrees=>180);
+        }
+        elsif ($rotation_angle == 6) {
+            $imager = $imager->rotate(degrees=>90);
+        }
+
         my $scaled = $imager->scale(xpixels => $scale);
+        
         $scaled->write(file => File::Spec->catfile($IMAGE_DIR, $scale, $filename)) or die $scaled->errstr;
     }
    
 
+    $self->render(json => {files => [
+  {
+    name => $filename,
+    size => $image->size,
+    url =>  sprintf('/images/orig/%s', $filename),
+    thumbnailUrl => sprintf('/images/200/%s', $filename),
+    }]
+  });
+
     # Redirect to top page
-    $self->redirect_to('index');
+    # $self->redirect_to('index');
     
 } => 'upload';
 
@@ -235,19 +256,44 @@ __DATA__
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" >
     <title>Rough, Slow, Stupid, Contrary Photohosting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap styles -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <!-- Generic page styles -->
+    <link rel="stylesheet" href="/file_uploader/css/style.css">
+    <!-- blueimp Gallery styles -->
+    <link rel="stylesheet" href="//blueimp.github.io/Gallery/css/blueimp-gallery.min.css">
+    <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
+    <link rel="stylesheet" href="/file_uploader/css/jquery.fileupload.css">
+    <link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui.css">
+    <!-- CSS adjustments for browsers with JavaScript disabled -->
+    <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-noscript.css"></noscript>
+    <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui-noscript.css"></noscript>
   </head>
   <body>
     <h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
     <% if (is_user_authenticated()) { %>
         <div><a href="/logout">Logout</a></div>
         <hr>
-        <form method="post" action="<%= url_for('upload') %>" enctype ="multipart/form-data">
-        <div>
-            File name
-            <input type="file" name="image" >
-            <input type="submit" value="Upload" >
-        </div>
-        </form>
+        <input id="fileupload" type="file" name="image" data-url="/upload" multiple>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script src="/file_uploader/js/vendor/jquery.ui.widget.js"></script>
+        <script src="/file_uploader/js/jquery.iframe-transport.js"></script>
+        <script src="/file_uploader/js/jquery.fileupload.js"></script>
+        <script>
+        $(function () {
+            $('#fileupload').fileupload({
+                dataType: 'json',
+                done: function (e, data) {
+                    $.each(data.result.files, function (index, file) {
+                        $('<p/>').text(file.name).appendTo('#lastUploadLog');
+                    });
+                }
+            });
+        });
+        </script>
+        <div id="lastUploadLog"></div>
+<!-- display images from server -->
         <div>
 <% foreach my $image (@$images) { %>
       <div>
@@ -273,6 +319,6 @@ __DATA__
         </div>
         </form>
     <% } %>
-    
+
   </body>
 </html>

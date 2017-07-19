@@ -8,13 +8,13 @@ use File::Basename 'basename';
 use File::Path 'mkpath';
 use File::Spec 'catfile';
 use Cwd;
-use Getopt::Long;
 
 use Imager;
 
+my $config = plugin 'Config'=> {file => 'application.conf'};;
+
 my $predefined_user = 'alpha6';
-my $predefined_password = "";
-GetOptions('password=s', \$predefined_password);
+my $predefined_password =  $config->{'password'};
 
 die "No user password defined!" unless($predefined_password);
 

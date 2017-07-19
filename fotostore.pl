@@ -212,6 +212,24 @@ __DATA__
   </body>
 </html>
 
+@@ no_logged.html.ep
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" >
+    <title>Rough, Slow, Stupid, Contrary Photohosting</title>
+  </head>
+  <body>
+    <h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
+    <form method="post" action="<%= url_for('login') %>" >
+      <div>
+        <input type="text" name="username" >
+        <input type="password" name="password">
+        <input type="submit" value="Login">
+      </div>
+    </form>
+    </body>
+</html>
+
 @@ index.html.ep
 <html>
   <head>
@@ -221,25 +239,16 @@ __DATA__
   <body>
     <h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
     <% if (is_user_authenticated()) { %>
-    <div><a href="/logout">Logout</a></div>
-    <hr>
-    <form method="post" action="<%= url_for('upload') %>" enctype ="multipart/form-data">
-      <div>
-        File name
-        <input type="file" name="image" >
-        <input type="submit" value="Upload" >
-      </div>
-    </form>
-    <% } else { %> 
-    <form method="post" action="<%= url_for('login') %>" >
-      <div>
-        <input type="text" name="username" >
-        <input type="password" name="password">
-        <input type="submit" value="Login">
-      </div>
-    </form>
-    <% } %>
-    <div>
+        <div><a href="/logout">Logout</a></div>
+        <hr>
+        <form method="post" action="<%= url_for('upload') %>" enctype ="multipart/form-data">
+        <div>
+            File name
+            <input type="file" name="image" >
+            <input type="submit" value="Upload" >
+        </div>
+        </form>
+        <div>
 <% foreach my $image (@$images) { %>
       <div>
         <hr>
@@ -255,5 +264,15 @@ __DATA__
       <div>
 <% } %>
     </div>
+    <% } else { %> 
+        <form method="post" action="<%= url_for('login') %>" >
+        <div>
+            <input type="text" name="username" >
+            <input type="password" name="password">
+            <input type="submit" value="Login">
+        </div>
+        </form>
+    <% } %>
+    
   </body>
 </html>

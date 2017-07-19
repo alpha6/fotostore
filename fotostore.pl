@@ -172,14 +172,14 @@ post '/upload' => (authenticated => 1)=> sub {
     my $rotation_angle = $imager->tags( name => "exif_orientation") || 1;
     $self->app->log->info("Rotation angle [".$rotation_angle."] [".$image->filename."]");
 
-    for my $scale (@scale_width) {
-        if ($rotation_angle == 3) {
+    if ($rotation_angle == 3) {
             $imager = $imager->rotate(degrees=>180);
         }
         elsif ($rotation_angle == 6) {
             $imager = $imager->rotate(degrees=>90);
         }
 
+    for my $scale (@scale_width) {
         my $scaled = $imager->scale(xpixels => $scale);
         
         $scaled->write(file => File::Spec->catfile($IMAGE_DIR, $scale, $filename)) or die $scaled->errstr;

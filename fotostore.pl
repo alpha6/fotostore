@@ -166,10 +166,11 @@ post '/upload' => (authenticated => 1)=> sub {
    
     my $imager = Imager->new();
     $imager->read(file => $image_file) or die $imager->errstr;
-    
+
     #http://sylvana.net/jpegcrop/exif_orientation.html
-    my $rotation_angle = $imager->tags( name => "exif_orientation");
-    $self->app->log->info("Rotation angle [".$rotation_angle."]");
+    #http://myjaphoo.de/docs/exifidentifiers.html
+    my $rotation_angle = $imager->tags( name => "exif_orientation") || 1;
+    $self->app->log->info("Rotation angle [".$rotation_angle."] [".$image->filename."]");
 
     for my $scale (@scale_width) {
         if ($rotation_angle == 3) {
@@ -187,7 +188,7 @@ post '/upload' => (authenticated => 1)=> sub {
 
     $self->render(json => {files => [
   {
-    name => $filename,
+    name => $image->filename,
     size => $image->size,
     url =>  sprintf('/images/orig/%s', $filename),
     thumbnailUrl => sprintf('/images/200/%s', $filename),

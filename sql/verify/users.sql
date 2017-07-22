@@ -2,7 +2,7 @@
 
 BEGIN;
 
-SELECT nickname, password, fullname, twitter
+SELECT user_id, nickname, password, fullname, timestamp
       FROM users
  WHERE 0;
 

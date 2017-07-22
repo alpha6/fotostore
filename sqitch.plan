@@ -2,3 +2,4 @@
 %project=fotostore
 %uri=https://rsscp.ru/
 
+users 2017-07-22T06:53:03Z Denis Fedoseev <denis.fedoseev@gmail.com> # Creates table to track our users.

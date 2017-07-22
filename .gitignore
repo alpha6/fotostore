@@ -1,2 +1,2 @@
 *.db
-*.conf
+application.conf

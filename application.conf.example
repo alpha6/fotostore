@@ -1,3 +1,4 @@
 {
     password => '',
+    db_file => 'sql/fotostore.db',
 }

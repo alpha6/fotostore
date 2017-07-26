@@ -6,3 +6,6 @@ requires 'File::Path';
 requires 'File::Spec';
 requires 'Cwd';
 requires 'Getopt::Long';
+requires 'DBI';
+requires 'DBD::SQLite';
+requires 'Digest::SHA';

@@ -37,24 +37,6 @@ my $sha = Digest::SHA->new('sha256');
 # (app is Mojolicious object. static is MojoX::Dispatcher::Static object)
 my $IMAGE_DIR = File::Spec->catfile( getcwd(), 'public', $IMAGE_BASE );
 
-# Create directory if not exists
-unless ( -d $IMAGE_DIR ) {
-    mkpath $IMAGE_DIR or die "Cannot create directory: $IMAGE_DIR";
-}
-
-my $ORIG_PATH = File::Spec->catfile( $IMAGE_DIR, $ORIG_DIR );
-unless ( -d $ORIG_PATH ) {
-    mkpath $ORIG_PATH or die "Cannot create directory: $ORIG_PATH";
-}
-
-for my $dir (@scale_width) {
-    my $scaled_dir_path = File::Spec->catfile( $IMAGE_DIR, $dir );
-    unless ( -d $scaled_dir_path ) {
-        mkpath $scaled_dir_path
-          or die "Cannot create directory: $scaled_dir_path";
-    }
-}
-
 plugin 'authentication', {
     autoload_user => 1,
     load_user     => sub {
@@ -103,15 +85,13 @@ get '/logout' => sub {
 get '/' => sub {
     my $self = shift;
 
-    my $thumbs_dir = File::Spec->catfile( $IMAGE_DIR, $thumbs_size );
+    my $current_user = $self->current_user;
 
-    # Get file names(Only base name)
-    my @images =
-      map { basename($_) }
-      glob("$thumbs_dir/*.jpg $thumbs_dir/*.gif $thumbs_dir/*.png");
-
-    # Sort by new order
-    @images = sort { $b cmp $a } @images;
+    my $files_list = $db->get_files($current_user->{'user_id'}, 20);
+    
+    my $thumbs_dir = File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'}, $thumbs_size );
+    
+    my @images = map { $_->{'file_name'} } @$files_list;
 
     # Render
     return $self->render(
@@ -119,7 +99,8 @@ get '/' => sub {
         image_base  => $IMAGE_BASE,
         orig        => $ORIG_DIR,
         thumbs_size => $thumbs_size,
-        scales      => \@scale_width
+        scales      => \@scale_width,
+        user_id     => $current_user->{'user_id'},
     );
 
 } => 'index';
@@ -132,6 +113,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
     my $image = $self->req->upload('image');
 
     my $user = $self->current_user();
+    my $user_id = $user->{'user_id'};
     $self->app->log->debug( "user:" . Dumper($user) );
 
     # Not upload
@@ -175,7 +157,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
 
     # Image file
     my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
-    my $image_file = File::Spec->catfile( $ORIG_PATH, $filename );
+    my $image_file = File::Spec->catfile( get_path($user_id, $ORIG_DIR), $filename );
 
     # Save to file
     $image->move_to($image_file);
@@ -200,7 +182,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
         my $scaled = $imager->scale( xpixels => $scale );
 
         $scaled->write(
-            file => File::Spec->catfile( $IMAGE_DIR, $scale, $filename ) )
+            file => File::Spec->catfile( get_path($user_id, $scale), $filename ) )
           or die $scaled->errstr;
     }
 
@@ -232,6 +214,15 @@ sub create_hash {
 
     $sha->add($data_to_hash);
     return $sha->hexdigest();
+}
+
+sub get_path {
+    my ($user_id, $size) = @_;
+    my $path = File::Spec->catfile( $IMAGE_DIR, $user_id, $size );
+    unless (-d $path) {
+        mkpath $path or die "Cannot create directory: $path";
+    }
+    return $path;
 }
 
 app->start;

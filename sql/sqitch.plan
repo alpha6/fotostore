@@ -7,3 +7,4 @@ images 2017-07-22T07:17:52Z Denis Fedoseev <denis.fedoseev@gmail.com> # Creates 
 albums 2017-07-22T08:50:11Z Denis Fedoseev <denis.fedoseev@gmail.com> # Albums database init
 user_images [users images] 2017-07-22T09:16:20Z Denis Fedoseev <denis.fedoseev@gmail.com> # +user_images table
 album_images [images albums] 2017-07-22T09:21:13Z Denis Fedoseev <denis.fedoseev@gmail.com> # +images to album mapping
+user_albums [users albums] 2017-07-22T09:47:48Z Denis Fedoseev <denis.fedoseev@gmail.com> # Albums to users mapping

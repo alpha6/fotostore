@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" >
+    <title>Rough, Slow, Stupid, Contrary Photohosting</title>
+  </head>
+  <body>
+    <h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
+    <form method="post" action="<%= url_for('login') %>" >
+      <div>
+        <input type="text" name="username" >
+        <input type="password" name="password">
+        <input type="submit" value="Login">
+      </div>
+    </form>
+    </body>
+</html>
+

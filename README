@@ -1,2 +1,4 @@
 Small script for store images.
 Based on http://d.hatena.ne.jp/yukikimoto/20100212/1265989676 with small modifications.
+
+URL format: /images/<user_id>/<size>/<image_name>

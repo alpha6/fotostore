@@ -1,0 +1,25 @@
+% layout 'base';
+
+<div class="container">
+    <div class="register">
+        <form method="post" action="<%= url_for('register') %>" >
+            <div>
+            <p>
+                Login: 
+                <input type="text" name="username" >
+            </p><p>
+                Fullname:
+                <input type="text" name="Fullname" >
+            </p><p>
+                Password:
+                <input type="password" name="password">
+            </p><p>
+                Invite code:
+                <input type="text" name="invite" >
+            </p><p>
+                <input type="submit" value="Register">
+            </p>
+            </div>
+        </form>
+    </div>
+</div>

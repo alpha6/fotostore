@@ -1,0 +1,9 @@
+.foto-block {
+    /* border: 1px solid black; */
+}
+.foto-block .image {
+    padding: 5px;
+}
+.foto-block .foto-notes {
+    padding: 5px;
+}

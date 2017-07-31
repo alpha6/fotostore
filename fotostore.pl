@@ -81,6 +81,45 @@ get '/logout' => sub {
     $self->render( text => 'bye' );
 };
 
+get '/register' => ( authenticated => 0 ) => sub {
+
+};
+
+post '/register' => ( authenticated => 0 ) => sub {
+    my $self = shift;
+    my $username    = $self->req->param('username');
+    my $password    = $self->req->param('password');
+    my $fullname = $self->req->param('fullname');
+    my $invite = $self->req->param('invite');
+
+    if ($invite eq $config->{'invite_code'}) {
+        #chek that username is not taken
+        my $user = $db->get_user($username);
+        if ($user->{'user_id'} > 0) {
+            $self->render(template => 'error', message => 'Username already taken!');
+            return 0;    
+        }
+
+        if ($fullname eq '') {
+            $fullname = $username;
+        }
+
+        my $digest = $sha->add($password);
+        $db->add_user($username, $digest->hexdigest(), $fullname);
+
+        #Authenticate user after add
+        if ( $self->authenticate( $username, $password ) ) {
+            $self->redirect_to('/');
+        }
+        else {
+            $self->render( text => 'Login failed :(' );
+        }
+
+    } else  {
+        $self->render(template => 'error', message => 'invalid invite code');
+    }
+}; 
+
 # Display top page
 get '/' => sub {
     my $self = shift;

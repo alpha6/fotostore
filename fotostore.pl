@@ -145,6 +145,7 @@ get '/' => sub {
 } => 'index';
 
 # Upload image file
+# There is no restriction for file size in app because restriction is present in nginx configuration
 post '/upload' => ( authenticated => 1 ) => sub {
     my $self = shift;
 
@@ -162,17 +163,6 @@ post '/upload' => ( authenticated => 1 ) => sub {
             message  => "Upload fail. File is not specified."
         );
     }
-
-    # Upload max size
-    #my $upload_max_size = 3 * 1024 * 1024;
-
-    # Over max size
-    #if ($image->size > $upload_max_size) {
-    #    return $self->render(
-    #        template => 'error',
-    #        message  => "Upload fail. Image size is too large."
-    #    );
-    #}
 
     # Check file type
     my $image_type = $image->headers->content_type;

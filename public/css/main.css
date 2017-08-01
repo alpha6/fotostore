@@ -7,3 +7,9 @@
 .foto-block .foto-notes {
     padding: 5px;
 }
+.copy-img {
+    content:url(/img/copy_icon.png);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+}

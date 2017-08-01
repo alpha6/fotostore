@@ -144,6 +144,37 @@ get '/' => sub {
 
 } => 'index';
 
+get '/get_images' => ( authenticated => 1 ) => sub {
+    my $self = shift;
+
+    my $current_user = $self->current_user;
+
+    my $files_list = $db->get_files($current_user->{'user_id'}, 20);
+    
+    my $thumbs_dir = File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'}, $thumbs_size );
+    
+    my @images = map { $_->{'file_name'} } @$files_list;
+
+    my $images = [];
+
+    for my $img_item (@$files_list) {
+        my $file = $img_item->{'file_name'};
+        my $img_hash = {};
+        $img_hash->{'original_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $ORIG_DIR, $file );
+        $img_hash->{'thumbnail_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $thumbs_size, $file );
+
+        for my $scale (@scale_width) {
+            $img_hash->{$scale} = File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $scale, $file );
+        }
+
+        push(@$images, $img_hash);
+    }    
+
+
+    # Render
+    return $self->render( json => $images );
+};
+
 # Upload image file
 # There is no restriction for file size in app because restriction is present in nginx configuration
 post '/upload' => ( authenticated => 1 ) => sub {

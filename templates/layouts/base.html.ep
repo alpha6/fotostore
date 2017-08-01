@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="/file_uploader/css/jquery.fileupload.css">
     <link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui.css">
     <link rel="stylesheet" href="/css/main.css">
+
+    <script src="https://vuejs.org/js/vue.min.js"></script>
+    
     <!-- CSS adjustments for browsers with JavaScript disabled -->
     <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-noscript.css"></noscript>
     <noscript><link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui-noscript.css"></noscript>
@@ -26,4 +29,5 @@
     <body>
     <%= content %>
     </body>
+
 </html>

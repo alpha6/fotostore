@@ -75,12 +75,11 @@
             xhr.open('GET', apiURL)
             xhr.onload = function () {
                 self.imagesList = JSON.parse(xhr.responseText)
-                // console.log(self.imagesList[0].thumbnail_url)
             }
             xhr.send()
             },
             copyText(event) {
-                // console.log(event.target);
+                //TODO: rewrite it to vue/JS from jquery
                 var $temp = $("<input>");
                 $("body").append($temp);
                 $temp.val("<img src="+$(event.target).text()+">").select();

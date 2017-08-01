@@ -19,7 +19,6 @@ sub new {
 }
 
 sub check_user ($self, $nickname, $password) {
-    print STDERR "[$nickname][$password]";
     my ($user_id) = $self->{'dbh'}->selectrow_array(q~select user_id from users where nickname=? and password=?~, undef, ($nickname, $password));
     return $user_id;
 }

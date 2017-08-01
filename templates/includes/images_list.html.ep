@@ -1,0 +1,83 @@
+<div class="container">
+    <div class"upload-form">    
+        <input id="fileupload" type="file" name="image" data-url="/upload" multiple>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script src="/file_uploader/js/vendor/jquery.ui.widget.js"></script>
+        <script src="/file_uploader/js/jquery.iframe-transport.js"></script>
+        <script src="/file_uploader/js/jquery.fileupload.js"></script>
+        <script>
+        $(function () {
+            $('#fileupload').fileupload({
+                dataType: 'json',
+                done: function (e, data) {
+                    $.each(data.result.files, function (index, file) {
+                        $('<p/>').text(file.name).appendTo('#lastUploadLog');
+                    });
+                },
+                sequentialUploads: true,
+                progressall: function (e, data) {
+                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    $('#progress .bar').css(
+                        'width',
+                        progress + '%'
+                    );
+                }
+            });
+        });
+        </script>
+        
+    </div>
+    <div id="progress">
+        <div class="bar" style="width: 0%;"></div>
+    </div>
+    <div id="lastUploadLog"></div>
+</div>
+
+<!-- display images from server -->
+<div class="container">
+    <div id="images_list">
+        <div class="foto-block row" v-for="image in imagesList">
+            <div class="image col-md-3">
+            <img v-bind:src="image.thumbnail_url">
+            </div>
+            <div class="foto-notes col-md-3">
+            <ul>
+                <li><a v-bind:href="image.thumbnail_url">Original</a></li>
+                <li v-for="scale in image.scales">
+                    <a v-bind:href="scale.url">{{ scale.size }}</a>
+                </li>
+            </ul>  
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var apiURL = '<%= url_for('get_images') %>'
+
+    var demo = new Vue({
+
+        el: '#images_list',
+
+        data: {
+            imagesList: null
+        },
+
+        created: function () {
+            this.fetchData()
+        },
+
+        methods: {
+            fetchData: function () {
+            var xhr = new XMLHttpRequest()
+            var self = this
+            xhr.open('GET', apiURL)
+            xhr.onload = function () {
+                self.imagesList = JSON.parse(xhr.responseText)
+                console.log(self.imagesList[0].thumbnail_url)
+            }
+            xhr.send()
+            }
+        }
+    })
+</script>

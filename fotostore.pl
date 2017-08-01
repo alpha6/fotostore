@@ -54,7 +54,7 @@ plugin 'authentication', {
         my $digest = $sha->add($password);
 
         my $user_id = $db->check_user( $username, $digest->hexdigest() );
-        $self->app->log->debug("user id: [$user_id]");
+        # $self->app->log->debug("user id: [$user_id]");
 
         return $user_id;
     },
@@ -126,22 +126,6 @@ get '/' => sub {
 
     my $current_user = $self->current_user;
 
-    my $files_list = $db->get_files($current_user->{'user_id'}, 20);
-    
-    my $thumbs_dir = File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'}, $thumbs_size );
-    
-    my @images = map { $_->{'file_name'} } @$files_list;
-
-    # Render
-    return $self->render(
-        images      => \@images,
-        image_base  => $IMAGE_BASE,
-        orig        => $ORIG_DIR,
-        thumbs_size => $thumbs_size,
-        scales      => \@scale_width,
-        user_id     => $current_user->{'user_id'},
-    );
-
 } => 'index';
 
 get '/get_images' => ( authenticated => 1 ) => sub {
@@ -163,9 +147,12 @@ get '/get_images' => ( authenticated => 1 ) => sub {
         $img_hash->{'original_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $ORIG_DIR, $file );
         $img_hash->{'thumbnail_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $thumbs_size, $file );
 
+        my @scaled = ();
         for my $scale (@scale_width) {
-            $img_hash->{$scale} = File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $scale, $file );
+            push(@scaled, {'size' => $scale, 'url' => File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $scale, $file )}) ;
         }
+
+        $img_hash->{'scales'} = \@scaled;
 
         push(@$images, $img_hash);
     }    

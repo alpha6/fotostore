@@ -42,7 +42,7 @@
             </div>
             <div class="foto-notes col-md-3">
             <ul>
-                <li><a v-bind:href="image.thumbnail_url">Original</a></li>
+                <li><a v-bind:href="image.original_url">Original</a></li>
                 <li v-for="scale in image.scales">
                     <a v-bind:href="scale.url">{{ scale.size }}</a>
                 </li>

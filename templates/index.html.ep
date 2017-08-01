@@ -1,17 +1,9 @@
 % layout 'base';
-<h1>Rough, Slow, Stupid, Contrary Photohosting</h1>
 
 <% if (is_user_authenticated()) { %>
     %= include 'includes/images_list'        
 <% } else { %> 
-    
-    <div class="login-form">
-        <form method="post" action="<%= url_for('login') %>" >
-            <input type="text" name="username" >
-            <input type="password" name="password">
-            <input type="submit" value="Login">
-        </form>
-    </div>
+    <h1>Please login to access your images</h1>
     
 <% } %>
 

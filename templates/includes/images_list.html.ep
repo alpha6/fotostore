@@ -42,9 +42,9 @@
             </div>
             <div class="foto-notes col-md-3">
             <ul>
-                <li><a v-bind:href="image.original_url">Original</a></li>
+                <li><a v-bind:href="image.original_url">Original</a> <div @click="copyText" class="copy-img">{{ hostname+image.original_url }}</div></li>
                 <li v-for="scale in image.scales">
-                    <a v-bind:href="scale.url">{{ scale.size }}</a> &lt;img src="{{ scale.url}}"&gt;
+                    <a v-bind:href="scale.url">{{ scale.size }}</a> <div @click="copyText" class="copy-img">{{ hostname+scale.url }}</div>
                 </li>
             </ul>  
             </div>
@@ -54,6 +54,7 @@
 
 <script>
     var apiURL = '<%= url_for('get_images') %>'
+    var hostname = window.location.protocol+"//"+window.location.host;
 
     var demo = new Vue({
 
@@ -74,10 +75,19 @@
             xhr.open('GET', apiURL)
             xhr.onload = function () {
                 self.imagesList = JSON.parse(xhr.responseText)
-                console.log(self.imagesList[0].thumbnail_url)
+                // console.log(self.imagesList[0].thumbnail_url)
             }
             xhr.send()
-            }
+            },
+            copyText(event) {
+                // console.log(event.target);
+                var $temp = $("<input>");
+                $("body").append($temp);
+                $temp.val("<img src="+$(event.target).text()+">").select();
+                document.execCommand("copy");
+                $temp.remove();
+            },
         }
+        
     })
 </script>

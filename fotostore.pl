@@ -78,7 +78,7 @@ get '/logout' => sub {
     my $self = shift;
 
     $self->logout();
-    $self->render( text => 'bye' );
+    $self->render( message => 'bye' );
 };
 
 get '/register' => ( authenticated => 0 ) => sub {

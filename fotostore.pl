@@ -144,6 +144,7 @@ get '/get_images' => ( authenticated => 1 ) => sub {
     for my $img_item (@$files_list) {
         my $file = $img_item->{'file_name'};
         my $img_hash = {};
+        $img_hash->{'filename'} = $img_item->{'original_filename'};
         $img_hash->{'original_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $ORIG_DIR, $file );
         $img_hash->{'thumbnail_url'} =  File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $thumbs_size, $file );
 
@@ -233,7 +234,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
           or die $scaled->errstr;
     }
 
-    if ( !$db->add_file( $user->{'user_id'}, $filename ) ) {
+    if ( !$db->add_file( $user->{'user_id'}, $filename,  $image->filename) ) {
 
         #TODO: Send error msg
     }

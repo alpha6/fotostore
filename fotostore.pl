@@ -17,7 +17,7 @@ use Digest::SHA;
 use FotoStore::DB;
 
 use Data::Dumper;
-$Data::Dumper::Maxdepth = 3;
+$Data::Dumper::Maxdepth = 2;
 
 my $config = plugin 'Config' => { file => 'application.conf' };
 
@@ -27,14 +27,18 @@ my $db = FotoStore::DB->new( $config->{'db_file'} );
 my $IMAGE_BASE = 'images';
 my $ORIG_DIR   = 'orig';
 
-my $thumbs_size = 200;
+# set allowed thumbnails scale and image scales
+my $thumbs_size = $config->{'thumbnails_size'};
 
-my @scale_width = ( $thumbs_size, 640, 800, 1024 );
+my $scales_map = $config->{'image_scales'};
+$scales_map->{$thumbs_size} = 1;
+
+#Sort and filter values for array of available scales
+my @scale_width = map { $scales_map->{$_} == 1 ? $_ : undef } sort {$a <=> $b} keys(%$scales_map);
 
 my $sha = Digest::SHA->new('sha256');
 
 # Directory to save image files
-# (app is Mojolicious object. static is MojoX::Dispatcher::Static object)
 my $IMAGE_DIR = File::Spec->catfile( getcwd(), 'public', $IMAGE_BASE );
 
 plugin 'authentication', {
@@ -54,7 +58,6 @@ plugin 'authentication', {
         my $digest = $sha->add($password);
 
         my $user_id = $db->check_user( $username, $digest->hexdigest() );
-        # $self->app->log->debug("user id: [$user_id]");
 
         return $user_id;
     },
@@ -112,7 +115,7 @@ post '/register' => ( authenticated => 0 ) => sub {
             $self->redirect_to('/');
         }
         else {
-            $self->render( text => 'Login failed :(' );
+            $self->render( template => 'error', message => 'Login failed :(' );
         }
 
     } else  {
@@ -132,6 +135,7 @@ get '/get_images' => ( authenticated => 1 ) => sub {
     my $self = shift;
 
     my $current_user = $self->current_user;
+    my $user_id = $current_user->{'user_id'};
 
     my $files_list = $db->get_files($current_user->{'user_id'}, 20);
     
@@ -150,14 +154,16 @@ get '/get_images' => ( authenticated => 1 ) => sub {
 
         my @scaled = ();
         for my $scale (@scale_width) {
-            push(@scaled, {'size' => $scale, 'url' => File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'}, $scale, $file )}) ;
+            if (-r File::Spec->catfile( get_path($user_id, $scale), $file )) {
+                push(@scaled, {'size' => $scale, 'url' => File::Spec->catfile( '/', $IMAGE_BASE, $user_id, $scale, $file )}) ;
+            }
+            
         }
 
         $img_hash->{'scales'} = \@scaled;
 
         push(@$images, $img_hash);
     }    
-
 
     # Render
     return $self->render( json => $images );
@@ -226,7 +232,14 @@ post '/upload' => ( authenticated => 1 ) => sub {
         $imager = $imager->rotate( degrees => 90 );
     }
 
+    my $original_width = $imager->getwidth();
+
     for my $scale (@scale_width) {
+        #Skip sizes which more than original image
+        if ($scale >= $original_width) {
+            next;
+        }
+
         my $scaled = $imager->scale( xpixels => $scale );
 
         $scaled->write(

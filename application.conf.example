@@ -1,4 +1,11 @@
 {
     db_file => 'sql/fotostore.db',
     invite_code => 'very_secure_invite_code',
+    thumbnails_size => 200,
+    image_scales => {
+        640 => 1,
+        800 => 1,
+        1024 => 1,
+        2048 => 1,
+    },
 }

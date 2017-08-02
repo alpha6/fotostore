@@ -51,8 +51,8 @@ sub add_user($self, $username, $password, $fullname) {
 }
 
 
-sub add_file($self, $user_id, $filename) {
-    my $rows =  $self->{'dbh'}->do(q~insert into images (owner_id, file_name) values (?, ?)~, undef, ($user_id, $filename));
+sub add_file($self, $user_id, $filename, $original_filename) {
+    my $rows =  $self->{'dbh'}->do(q~insert into images (owner_id, file_name, original_filename) values (?, ?, ?)~, undef, ($user_id, $filename, $original_filename));
     if ($self->{'dbh'}->errstr) {
         die $self->{'dbh'}->errstr;
     }

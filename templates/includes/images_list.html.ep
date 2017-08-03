@@ -101,7 +101,7 @@
                 //TODO: rewrite it to vue/JS from jquery
                 var $temp = $("<input>");
                 $("body").append($temp);
-                $temp.val($(event.target).text()).select();
+                $temp.val($(event.target).text().trim()).select();
                 document.execCommand("copy");
                 $temp.remove();
             },

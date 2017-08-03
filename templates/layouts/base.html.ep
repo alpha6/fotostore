@@ -14,14 +14,7 @@
     <link rel="stylesheet" href="/file_uploader/css/jquery.fileupload-ui.css">
     <link rel="stylesheet" href="/css/main.css">
 
-    <script src="https://vuejs.org/js/vue.min.js"></script>
-    
-    <style>
-        .bar {
-            height: 18px;
-            background: green;
-        }
-    </style>
+      <script src="https://vuejs.org/js/vue.min.js"></script>
     </head>
     <body>
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">

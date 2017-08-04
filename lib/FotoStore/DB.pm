@@ -1,5 +1,6 @@
 package FotoStore::DB;
 
+use v5.20;
 use strict;
 use warnings;
 
@@ -59,8 +60,17 @@ sub add_file($self, $user_id, $filename, $original_filename) {
     return $rows;
 }
 
-sub get_files($self, $user_id, $count=20, $start_at=0) {
-    return $self->{'dbh'}->selectall_arrayref(q~select * from images where owner_id=? order by created_time desc~, { Slice => {} }, $user_id );
+sub get_files($self, $user_id, $items_count=20, $page=1) {
+
+    # Calculate offset 
+    # Pages in UI starts from 1, but here we need it to start from 0
+    $page = 1 if ($page < 1);
+    my $start_at = --$page * $items_count;
+
+    my ($rows_count) = $self->{'dbh'}->selectrow_array(q~select count(*) from images where owner_id=? ~, undef , $user_id);
+    my $images_list = $self->{'dbh'}->selectall_arrayref(q~select * from images where owner_id=? order by created_time desc LIMIT ? OFFSET ? ~, { Slice => {} }, $user_id, $items_count, $start_at  );
+
+    return { total_rows => $rows_count, images_list => $images_list };
 }
 
 1;

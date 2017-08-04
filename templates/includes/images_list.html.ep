@@ -1,5 +1,5 @@
-<div class="container">
-    <div class"upload-form">    
+<div class="container upload-form" id="upload-form">
+    
         <input id="fileupload" type="file" name="image" data-url="/upload" multiple>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
         <script src="/file_uploader/js/vendor/jquery.ui.widget.js"></script>
@@ -26,7 +26,6 @@
         });
         </script>
         
-    </div>
     <div id="progress">
         <div class="progress-bar" style="width: 0%;"></div>
     </div>
@@ -99,7 +98,7 @@
         },
 
         created: function () {
-           this.fetchData(1)
+           this.fetchData(this.pageNumber)
         },
 
         methods: {
@@ -110,6 +109,7 @@
                 xhr.onload = function () {
                     var result = JSON.parse(xhr.responseText);
                     self.imagesList = result.images_list;
+                    console.dir(self.imagesList);
                     self.pagesCount = result.pages_count;
                 }
                 xhr.send()

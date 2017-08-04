@@ -9,6 +9,7 @@ use File::Basename 'basename';
 use File::Path 'mkpath';
 use File::Spec 'catfile';
 use Cwd;
+use POSIX;
 
 use Imager;
 use DBI;
@@ -141,10 +142,21 @@ get '/' => sub {
 get '/get_images' => ( authenticated => 1 ) => sub {
     my $self = shift;
 
+    #Getting current user
     my $current_user = $self->current_user;
     my $user_id      = $current_user->{'user_id'};
 
-    my $files_list = $db->get_files( $current_user->{'user_id'}, 20 );
+    #Getting images list with paging
+    my $page = $self->param('page') || 1;
+    my $items = $self->param('per-page') || 20;
+
+    if (($page !~ /^\d+$/) || ($page <= 1)) { $page = 1}
+    if (($items !~ /^\d+$/) || ($items <= 0)) { $items = 20}
+    
+    # process images list
+    my $req_result = $db->get_files( $current_user->{'user_id'}, $items , $page);
+    my $files_list = $req_result->{'images_list'};
+    my $pages_count = ceil($req_result->{'total_rows'}/$items);
 
     my $thumbs_dir =
       File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'},
@@ -157,6 +169,7 @@ get '/get_images' => ( authenticated => 1 ) => sub {
     for my $img_item (@$files_list) {
         my $file     = $img_item->{'file_name'};
         my $img_hash = {};
+        $img_hash->{'id'} = $img_item->{'file_id'};
         $img_hash->{'filename'} = $img_item->{'original_filename'};
         $img_hash->{'original_url'} =
           File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'},
@@ -185,10 +198,14 @@ get '/get_images' => ( authenticated => 1 ) => sub {
         $img_hash->{'scales'} = \@scaled;
 
         push( @$images, $img_hash );
+
+        
     }
 
+    my $reply_data = { current_page => $page, items_per_page => $items, pages_count => $pages_count, images_list => $images };
+
     # Render
-    return $self->render( json => $images );
+    return $self->render( json => $reply_data );
 };
 
 # Upload image file
@@ -201,7 +218,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
 
     my $user    = $self->current_user();
     my $user_id = $user->{'user_id'};
-    $self->app->log->debug( "user:" . Dumper($user) );
+    # $self->app->log->debug( "user:" . Dumper($user) );
 
     # Not upload
     unless ($image) {

@@ -68,7 +68,20 @@
                 </div>
             </div>
         </div>
+        <div class="container paginator">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default">Prev</button>
+                <button type="button" class="btn btn-default" v-for="pageNumber in pagesCount" v-on:click="fetchData(pageNumber)">{{ pageNumber }}</button>
+                <button type="button" class="btn btn-default">Next</button>
+            </div>
+            <div class="container">
+                <div class="items-per-page-form">Fotos per page: <input v-model="imagesPerPage">
+                    <button type="button" class="btn btn-default" v-on:click="fetchData()">Update</button>
+                </div>
+            </div>
+        </div>
     </div>
+    
 </div>
 
 <script>
@@ -78,27 +91,31 @@
     var demo = new Vue({
 
         el: '#images_list',
-
         data: {
-            imagesList: null
+            imagesList: null,
+            pageNumber: 1,
+            pagesCount: 5,
+            imagesPerPage: 20,
         },
 
         created: function () {
-            this.fetchData()
+           this.fetchData(1)
         },
 
         methods: {
-            fetchData: function () {
-            var xhr = new XMLHttpRequest()
-            var self = this
-            xhr.open('GET', apiURL)
-            xhr.onload = function () {
-                self.imagesList = JSON.parse(xhr.responseText)
-            }
-            xhr.send()
+            fetchData: function (pageNumber) {
+                var xhr = new XMLHttpRequest()
+                var self = this
+                xhr.open('GET', apiURL+"?page="+pageNumber+"&per-page="+self.imagesPerPage)
+                xhr.onload = function () {
+                    var result = JSON.parse(xhr.responseText);
+                    self.imagesList = result.images_list;
+                    self.pagesCount = result.pages_count;
+                }
+                xhr.send()
             },
             copyText(event) {
-                //TODO: rewrite it to vue/JS from jquery
+                //TODO: rewrite it to vue or pure JS from jQuery
                 var $temp = $("<input>");
                 $("body").append($temp);
                 $temp.val($(event.target).text().trim()).select();
@@ -107,5 +124,5 @@
             },
         }
         
-    })
+    });
 </script>

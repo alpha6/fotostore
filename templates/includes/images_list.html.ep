@@ -28,7 +28,7 @@
         
     </div>
     <div id="progress">
-        <div class="bar" style="width: 0%;"></div>
+        <div class="progress-bar" style="width: 0%;"></div>
     </div>
     <div id="lastUploadLog"></div>
 </div>
@@ -39,15 +39,33 @@
         <div class="foto-block row" v-for="image in imagesList">
             <div class="image col-md-3">
                 <img v-bind:src="image.thumbnail_url">
-                <div class="image_title">{{ image.id }} - {{ image.filename }}</div>
+                <div class="image_title">
+                    {{ image.filename }}
+                </div>
             </div>
             <div class="foto-notes col-md-3">
-            <ul>
-                <li><a v-bind:href="image.original_url">Original</a> <div @click="copyText" class="copy-img">{{ hostname+image.original_url }}</div></li>
-                <li v-for="scale in image.scales">
-                    <a v-bind:href="scale.url">{{ scale.size }}</a> <div @click="copyText" class="copy-img">{{ hostname+scale.url }}</div>
-                </li>
-            </ul>  
+                <div class="image-scale image-original">
+                    <div class="image-scale-url">
+                        <a v-bind:href="image.original_url">Original</a>
+                    </div>
+                    <div @click="copyText" class="copy-img">
+                        &lt;img src={{ hostname+image.original_url }}&gt;
+                    </div>
+                    <div @click="copyText" class="copy-bb-more">
+                        [MORE=&lt;img src={{ hostname+image.thumbnail_url }}&gt;]&lt;img src={{ hostname+image.original_url }}&gt;[/MORE]
+                    </div>
+                </div>    
+                <div class="image-scale" v-for="scale in image.scales">
+                    <div class="image-scale-url">
+                        <a v-bind:href="scale.url">{{ scale.size }}</a>
+                    </div>
+                    <div @click="copyText" class="copy-img">
+                        &lt;img src={{ hostname+scale.url }}&gt;
+                    </div> 
+                    <div @click="copyText" class="copy-bb-more">
+                        [MORE=&lt;img src={{ hostname+image.thumbnail_url }}&gt;]&lt;img src={{ hostname+scale.url }}&gt;[/MORE]
+                    </div>
+                </div>
             </div>
         </div>
         <div class="container paginator">
@@ -100,7 +118,7 @@
                 //TODO: rewrite it to vue or pure JS from jQuery
                 var $temp = $("<input>");
                 $("body").append($temp);
-                $temp.val("<img src="+$(event.target).text()+">").select();
+                $temp.val($(event.target).text().trim()).select();
                 document.execCommand("copy");
                 $temp.remove();
             },

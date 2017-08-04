@@ -1,16 +1,40 @@
+.progress-bar {
+    height: 18px;
+    background: green;
+}
+
 .foto-block {
     /* border: 1px solid black; */
 }
+
 .foto-block .image {
     padding: 5px;
 }
+
 .foto-block .foto-notes {
     padding: 5px;
 }
+
 .copy-img {
-    content:url(/img/copy_icon.png);
+    content: url(/img/copy_icon.png);
     width: 32px;
     height: 32px;
     overflow: hidden;
     cursor: pointer;
+    position: relative;
+}
+
+.copy-bb-more {
+    content: url(/img/more_icon.png);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.image-scale {
+    float: left;
+    padding-right: 5px;
+    position: relative;
 }

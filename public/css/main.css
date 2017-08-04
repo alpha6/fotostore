@@ -38,3 +38,8 @@
     padding-right: 5px;
     position: relative;
 }
+
+.upload-form {
+    height: 100px;
+    padding: 10px;
+}

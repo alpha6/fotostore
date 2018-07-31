@@ -44,6 +44,8 @@ my $sha = Digest::SHA->new('sha256');
 # Directory to save image files
 my $IMAGE_DIR = File::Spec->catfile( getcwd(), 'public', $IMAGE_BASE );
 
+my $log = Mojo::Log->new();
+
 plugin 'authentication', {
     autoload_user => 1,
     load_user     => sub {
@@ -93,10 +95,10 @@ get '/register' => ( authenticated => 0 ) => sub {
 
 post '/register' => ( authenticated => 0 ) => sub {
     my $self     = shift;
-    my $username = $self->req->param('username');
-    my $password = $self->req->param('password');
-    my $fullname = $self->req->param('fullname');
-    my $invite   = $self->req->param('invite');
+    my $username = $self->req->param('username') || "";
+    my $password = $self->req->param('password') || "";
+    my $fullname = $self->req->param('fullname') || "";
+    my $invite   = $self->req->param('invite') || "";
 
     if ( $invite eq $config->{'invite_code'} ) {
 
@@ -240,58 +242,7 @@ post '/upload' => ( authenticated => 1 ) => sub {
         );
     }
 
-    # Extention
-    my $exts = {
-        'image/gif'  => 'gif',
-        'image/jpeg' => 'jpg',
-        'image/png'  => 'png'
-    };
-    my $ext = $exts->{$image_type};
-
-    # Image file
-    my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
-    my $image_file =
-      File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
-
-    # Save to file
-    $image->move_to($image_file);
-
-    my $imager = Imager->new();
-    $imager->read( file => $image_file ) or die $imager->errstr;
-
-    #http://sylvana.net/jpegcrop/exif_orientation.html
-    #http://myjaphoo.de/docs/exifidentifiers.html
-    my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
-    $self->app->log->info(
-        "Rotation angle [" . $rotation_angle . "] [" . $image->filename . "]" );
-
-    if ( $rotation_angle == 3 ) {
-        $imager = $imager->rotate( degrees => 180 );
-    }
-    elsif ( $rotation_angle == 6 ) {
-        $imager = $imager->rotate( degrees => 90 );
-    }
-
-    my $original_width = $imager->getwidth();
-
-    for my $scale (@scale_width) {
-
-        #Skip sizes which more than original image
-        if ( $scale >= $original_width ) {
-            next;
-        }
-
-        my $scaled = $imager->scale( xpixels => $scale );
-
-        $scaled->write( file =>
-              File::Spec->catfile( get_path( $user_id, $scale ), $filename ) )
-          or die $scaled->errstr;
-    }
-
-    if ( !$db->add_file( $user->{'user_id'}, $filename, $image->filename ) ) {
-
-        #TODO: Send error msg
-    }
+    my $filename = store_image($image, $user_id);
 
     $self->render(
         json => {
@@ -325,6 +276,68 @@ sub get_path {
         mkpath $path or die "Cannot create directory: $path";
     }
     return $path;
+}
+
+sub store_image {
+    my $image = shift;
+    my $user_id = shift;
+
+    my $image_type = $image->headers->content_type;
+
+    # Extention
+    my $exts = {
+        'image/gif'  => 'gif',
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png'
+    };
+    my $ext = $exts->{$image_type};
+
+    # Image file
+    my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
+    my $image_file =
+      File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
+
+    # Save to file
+    $image->move_to($image_file);
+
+    my $imager = Imager->new();
+    $imager->read( file => $image_file ) or die $imager->errstr;
+
+    #http://sylvana.net/jpegcrop/exif_orientation.html
+    #http://myjaphoo.de/docs/exifidentifiers.html
+    my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
+    $log->debug(
+        "Rotation angle [" . $rotation_angle . "] [" . $image->filename . "]" );
+
+    if ( $rotation_angle == 3 ) {
+        $imager = $imager->rotate( degrees => 180 );
+    }
+    elsif ( $rotation_angle == 6 ) {
+        $imager = $imager->rotate( degrees => 90 );
+    }
+
+    my $original_width = $imager->getwidth();
+
+    for my $scale (@scale_width) {
+
+        #Skip sizes which more than original image
+        if ( $scale >= $original_width ) {
+            next;
+        }
+
+        my $scaled = $imager->scale( xpixels => $scale );
+
+        $scaled->write( file =>
+              File::Spec->catfile( get_path( $user_id, $scale ), $filename ) )
+          or die $scaled->errstr;
+    }
+
+    if ( !$db->add_file( $user_id, $filename, $image->filename ) ) {
+
+        die sprintf('Can\'t save file %s', $filename);
+    }
+
+    return $filename;
 }
 
 app->start;

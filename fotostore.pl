@@ -4,6 +4,8 @@ use warnings;
 
 use lib 'lib';
 use Mojolicious::Lite;    # app, get, post is exported.
+use Mojo::Promise;
+use Mojo::IOLoop;
 
 use File::Basename qw/basename fileparse/;
 use File::Path 'mkpath';
@@ -255,34 +257,48 @@ post '/upload' => ( authenticated => 1 ) => sub {
     # Save to file
     $image->move_to($image_file);
 
-    # Operation that would block the event loop for 5 seconds
-    my $subprocess = Mojo::IOLoop::Subprocess->new;
-    $subprocess->run(
-        sub {
-            my $subprocess = shift;
-            store_image($image_file, $image->filename, $user_id);
-        },
-        sub {
-            my ($subprocess, $err, @results) = @_;
-            say "Subprocess error: $err" and return if $err;
-            say "I $results[0] $results[1]!";
-        }
-    );
+    $log->debug("Spwan subprocess");
+    
+    my $promise = store_image($image_file, $image->filename, $user_id);
+    
 
-    $subprocess->ioloop->start unless $subprocess->ioloop->is_running;
-
-    $self->render(
-        json => {
-            files => [
-                {
-                    name         => $image->filename,
-                    size         => $image->size,
-                    url          => sprintf( '/images/orig/%s', $filename ),
-                    thumbnailUrl => sprintf( '/images/200/%s', $filename ),
+    Mojo::Promise->all($promise)->then(sub {
+        $self->render(
+                json => {
+                    files => [
+                        {
+                            name         => $image->filename,
+                            size         => $image->size,
+                            url          => sprintf( '/images/orig/%s', $filename ),
+                            thumbnailUrl => sprintf( '/images/200/%s', $filename ),
+                        }
+                    ]
                 }
-            ]
-        }
-    );
+            );
+    })->wait;
+
+    
+    # $log->debug("wait for promise");
+    # Mojo::Promise->all($spawn_subprocess)->then(sub {
+    #     $self->render(
+    #         json => {
+    #             files => [
+    #                 {
+    #                     name         => $image->filename,
+    #                     size         => $image->size,
+    #                     url          => sprintf( '/images/orig/%s', $filename ),
+    #                     thumbnailUrl => sprintf( '/images/200/%s', $filename ),
+    #                 }
+    #             ]
+    #         }
+    #     );
+
+    # })->catch(sub {
+    #     my $err = shift;
+    #     warn "Something went wrong: $err";
+    # })->wait;
+
+    
 
     # Redirect to top page
     # $self->redirect_to('index');
@@ -310,47 +326,65 @@ sub store_image {
     my $original_filename = shift;
     my $user_id = shift;
 
+    my $promise = Mojo::Promise->new;
+    # Operation that would block the event loop for 5 seconds
+    Mojo::IOLoop->subprocess(
+        sub {
+            my $subprocess = shift;
 
-    my $filename = fileparse($image_file);
-    my $imager = Imager->new();
-    $imager->read( file => $image_file ) or die $imager->errstr;
+            my $filename = fileparse($image_file);
+            my $imager = Imager->new();
+            $imager->read( file => $image_file ) or die $imager->errstr;
 
-    #http://sylvana.net/jpegcrop/exif_orientation.html
-    #http://myjaphoo.de/docs/exifidentifiers.html
-    my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
-    $log->debug(
-        "Rotation angle [" . $rotation_angle . "]" );
+            #http://sylvana.net/jpegcrop/exif_orientation.html
+            #http://myjaphoo.de/docs/exifidentifiers.html
+            my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
+            $log->debug(
+                "Rotation angle [" . $rotation_angle . "]" );
 
-    if ( $rotation_angle == 3 ) {
-        $imager = $imager->rotate( degrees => 180 );
-    }
-    elsif ( $rotation_angle == 6 ) {
-        $imager = $imager->rotate( degrees => 90 );
-    }
+            if ( $rotation_angle == 3 ) {
+                $imager = $imager->rotate( degrees => 180 );
+            }
+            elsif ( $rotation_angle == 6 ) {
+                $imager = $imager->rotate( degrees => 90 );
+            }
 
-    my $original_width = $imager->getwidth();
+            my $original_width = $imager->getwidth();
 
-    for my $scale (@scale_width) {
+            for my $scale (@scale_width) {
 
-        #Skip sizes which more than original image
-        if ( $scale >= $original_width ) {
-            next;
+                #Skip sizes which more than original image
+                if ( $scale >= $original_width ) {
+                    next;
+                }
+
+                my $scaled = $imager->scale( xpixels => $scale );
+
+                $scaled->write( file =>
+                    File::Spec->catfile( get_path( $user_id, $scale ), $filename ) )
+                or die $scaled->errstr;
+            }
+
+            if ( !$db->add_file( $user_id, $filename, $original_filename ) ) {
+
+                $log->error(sprintf('Can\'t save file %s', $filename));
+                die sprintf('Can\'t save file %s', $filename);
+            }
+
+            $log->debug("done!");
+            return $filename;
+        },
+        sub {
+            my ($subprocess, $err, @results) = @_;
+            say "Subprocess error: $err" and return if $err;
+            $promise->reject("I $results[0] $results[1]!") if $err;
+            $promise->resolve(@results);
         }
+    );
 
-        my $scaled = $imager->scale( xpixels => $scale );
-
-        $scaled->write( file =>
-              File::Spec->catfile( get_path( $user_id, $scale ), $filename ) )
-          or die $scaled->errstr;
-    }
-
-    if ( !$db->add_file( $user_id, $filename, $original_filename ) ) {
-
-        $log->error(sprintf('Can\'t save file %s', $filename));
-        die sprintf('Can\'t save file %s', $filename);
-    }
-
-    return $filename;
+    return $promise;
+    
 }
 
+Mojo::IOLoop->start;
 app->start;

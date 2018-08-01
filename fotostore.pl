@@ -257,11 +257,10 @@ post '/upload' => ( authenticated => 1 ) => sub {
     # Save to file
     $image->move_to($image_file);
 
-    $log->debug("Spwan subprocess");
     
     my $promise = store_image($image_file, $image->filename, $user_id);
     
-
+    #TODO: add errors handling
     Mojo::Promise->all($promise)->then(sub {
         $self->render(
                 json => {
@@ -276,32 +275,6 @@ post '/upload' => ( authenticated => 1 ) => sub {
                 }
             );
     })->wait;
-
-    
-    # $log->debug("wait for promise");
-    # Mojo::Promise->all($spawn_subprocess)->then(sub {
-    #     $self->render(
-    #         json => {
-    #             files => [
-    #                 {
-    #                     name         => $image->filename,
-    #                     size         => $image->size,
-    #                     url          => sprintf( '/images/orig/%s', $filename ),
-    #                     thumbnailUrl => sprintf( '/images/200/%s', $filename ),
-    #                 }
-    #             ]
-    #         }
-    #     );
-
-    # })->catch(sub {
-    #     my $err = shift;
-    #     warn "Something went wrong: $err";
-    # })->wait;
-
-    
-
-    # Redirect to top page
-    # $self->redirect_to('index');
 
 } => 'upload';
 
@@ -327,7 +300,7 @@ sub store_image {
     my $user_id = shift;
 
     my $promise = Mojo::Promise->new;
-    # Operation that would block the event loop for 5 seconds
+    # Process and store uploaded file in a separate process
     Mojo::IOLoop->subprocess(
         sub {
             my $subprocess = shift;
@@ -371,19 +344,17 @@ sub store_image {
                 die sprintf('Can\'t save file %s', $filename);
             }
 
-            $log->debug("done!");
             return $filename;
         },
         sub {
             my ($subprocess, $err, @results) = @_;
-            say "Subprocess error: $err" and return if $err;
-            $promise->reject("I $results[0] $results[1]!") if $err;
-            $promise->resolve(@results);
+            $log->error("Subprocess error: $err") and return if $err;
+            $promise->reject("Subprocess error: $err @results") if $err;
+            $promise->resolve(1, @results);
         }
     );
 
     return $promise;
-    
 }
 
 Mojo::IOLoop->start;

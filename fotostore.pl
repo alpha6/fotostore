@@ -5,7 +5,7 @@ use warnings;
 use lib 'lib';
 use Mojolicious::Lite;    # app, get, post is exported.
 
-use File::Basename 'basename';
+use File::Basename qw/basename fileparse/;
 use File::Path 'mkpath';
 use File::Spec 'catfile';
 use Cwd;
@@ -220,7 +220,6 @@ post '/upload' => ( authenticated => 1 ) => sub {
 
     my $user    = $self->current_user();
     my $user_id = $user->{'user_id'};
-    # $self->app->log->debug( "user:" . Dumper($user) );
 
     # Not upload
     unless ($image) {
@@ -232,7 +231,11 @@ post '/upload' => ( authenticated => 1 ) => sub {
 
     # Check file type
     my $image_type = $image->headers->content_type;
-    my %valid_types = map { $_ => 1 } qw(image/gif image/jpeg image/png);
+    my %valid_types = (
+        'image/gif'  => 'gif',
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png'
+    );
 
     # Content type is wrong
     unless ( $valid_types{$image_type} ) {
@@ -242,7 +245,31 @@ post '/upload' => ( authenticated => 1 ) => sub {
         );
     }
 
-    my $filename = store_image($image, $user_id);
+    my $ext = $valid_types{$image_type};
+
+    # Image file
+    my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
+    my $image_file =
+      File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
+
+    # Save to file
+    $image->move_to($image_file);
+
+    # Operation that would block the event loop for 5 seconds
+    my $subprocess = Mojo::IOLoop::Subprocess->new;
+    $subprocess->run(
+        sub {
+            my $subprocess = shift;
+            store_image($image_file, $image->filename, $user_id);
+        },
+        sub {
+            my ($subprocess, $err, @results) = @_;
+            say "Subprocess error: $err" and return if $err;
+            say "I $results[0] $results[1]!";
+        }
+    );
+
+    $subprocess->ioloop->start unless $subprocess->ioloop->is_running;
 
     $self->render(
         json => {
@@ -279,27 +306,12 @@ sub get_path {
 }
 
 sub store_image {
-    my $image = shift;
+    my $image_file = shift;
+    my $original_filename = shift;
     my $user_id = shift;
 
-    my $image_type = $image->headers->content_type;
 
-    # Extention
-    my $exts = {
-        'image/gif'  => 'gif',
-        'image/jpeg' => 'jpg',
-        'image/png'  => 'png'
-    };
-    my $ext = $exts->{$image_type};
-
-    # Image file
-    my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
-    my $image_file =
-      File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
-
-    # Save to file
-    $image->move_to($image_file);
-
+    my $filename = fileparse($image_file);
     my $imager = Imager->new();
     $imager->read( file => $image_file ) or die $imager->errstr;
 
@@ -307,7 +319,7 @@ sub store_image {
     #http://myjaphoo.de/docs/exifidentifiers.html
     my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
     $log->debug(
-        "Rotation angle [" . $rotation_angle . "] [" . $image->filename . "]" );
+        "Rotation angle [" . $rotation_angle . "]" );
 
     if ( $rotation_angle == 3 ) {
         $imager = $imager->rotate( degrees => 180 );
@@ -332,8 +344,9 @@ sub store_image {
           or die $scaled->errstr;
     }
 
-    if ( !$db->add_file( $user_id, $filename, $image->filename ) ) {
+    if ( !$db->add_file( $user_id, $filename, $original_filename ) ) {
 
+        $log->error(sprintf('Can\'t save file %s', $filename));
         die sprintf('Can\'t save file %s', $filename);
     }
 

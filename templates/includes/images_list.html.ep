@@ -17,7 +17,7 @@
                 sequentialUploads: true,
                 progressall: function (e, data) {
                     var progress = parseInt(data.loaded / data.total * 100, 10);
-                    $('#progress .bar').css(
+                    $('#progress .progress-bar').css(
                         'width',
                         progress + '%'
                     );
@@ -26,10 +26,10 @@
         });
         </script>
         
-    <div id="progress">
+    <div id="progress" class="container">
         <div class="progress-bar" style="width: 0%;"></div>
     </div>
-    <div id="lastUploadLog"></div>
+    <div id="lastUploadLog" class="container"></div>
 </div>
 
 <!-- display images from server -->

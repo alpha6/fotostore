@@ -1,4 +1,4 @@
-requires 'Mojolicious';
+requires 'Mojolicious', '>= 7.88';
 requires 'Mojolicious::Plugin::Authentication';
 requires 'Imager';
 requires 'File::Basename';

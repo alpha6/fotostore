@@ -15,8 +15,26 @@
     padding: 5px;
 }
 
+.copy-img:before {
+    content: url(/img/copy_icon.png);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
 .copy-img {
     content: url(/img/copy_icon.png);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.copy-bb-more:before {
+    content: url(/img/more_icon.png);
     width: 32px;
     height: 32px;
     overflow: hidden;
@@ -37,4 +55,9 @@
     float: left;
     padding-right: 5px;
     position: relative;
+}
+
+.upload-form {
+    height: 100px;
+    padding: 10px;
 }

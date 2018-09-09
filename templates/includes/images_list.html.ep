@@ -5,26 +5,7 @@
         <script src="/file_uploader/js/vendor/jquery.ui.widget.js"></script>
         <script src="/file_uploader/js/jquery.iframe-transport.js"></script>
         <script src="/file_uploader/js/jquery.fileupload.js"></script>
-        <script>
-        $(function () {
-            $('#fileupload').fileupload({
-                dataType: 'json',
-                done: function (e, data) {
-                    $.each(data.result.files, function (index, file) {
-                        $('<p/>').text(file.name).appendTo('#lastUploadLog');
-                    });
-                },
-                sequentialUploads: true,
-                progressall: function (e, data) {
-                    var progress = parseInt(data.loaded / data.total * 100, 10);
-                    $('#progress .progress-bar').css(
-                        'width',
-                        progress + '%'
-                    );
-                }
-            });
-        });
-        </script>
+        
         
     <div id="progress" class="container">
         <div class="progress-bar" style="width: 0%;"></div>
@@ -109,7 +90,6 @@
                 xhr.onload = function () {
                     var result = JSON.parse(xhr.responseText);
                     self.imagesList = result.images_list;
-                    console.dir(self.imagesList);
                     self.pagesCount = result.pages_count;
                 }
                 xhr.send()
@@ -126,3 +106,24 @@
         
     });
 </script>
+<script>
+        $(function () {
+            $('#fileupload').fileupload({
+                dataType: 'json',
+                done: function (e, data) {
+                    $.each(data.result.files, function (index, file) {
+                        $('<p/>').text(file.name).appendTo('#lastUploadLog');
+                        $('#progress .progress-bar').css('width','0%');
+                    });
+                },
+                sequentialUploads: true,
+                progressall: function (e, data) {
+                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    $('#progress .progress-bar').css(
+                        'width',
+                        progress + '%'
+                    );
+                }
+            });
+        });
+        </script>

@@ -11,3 +11,5 @@ user_albums [users albums] 2017-07-22T09:47:48Z Denis Fedoseev <denis.fedoseev@g
 @v1.0.0 2017-08-02T03:46:51Z Denis Fedoseev <denis.fedoseev@gmail.com> # Tag v1.0.0.
 images [images@v1.0.0] 2017-08-02T03:55:08Z Denis Fedoseev <denis.fedoseev@gmail.com> # Adds images.original_filename.
 @v1.1.0 2017-08-02T04:46:42Z Denis Fedoseev <denis.fedoseev@gmail.com> # Tag v1.1.0.
+
+exif_data 2018-08-19T08:04:49Z Denis Fedoseev <denis.fedoseev@gmail.com> # exif data table

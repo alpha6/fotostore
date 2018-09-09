@@ -2,7 +2,7 @@
 
 BEGIN;
 
-CREATE TABLE "albums" (
+CREATE TABLE `albums` (
  `album_id` INTEGER PRIMARY KEY AUTOINCREMENT,
  `name` STRING NOT NULL,
  `description` TEXT,
@@ -10,6 +10,6 @@ CREATE TABLE "albums" (
  `modified` DATETIME DEFAULT (CURRENT_TIMESTAMP),
  `deleted` BOOLEAN,
  `owner_id` INTEGER NOT NULL
- )
+ );
 
 COMMIT;

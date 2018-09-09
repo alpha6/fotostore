@@ -38,8 +38,8 @@ $scales_map->{$thumbs_size} = 1;
 
 #Sort and filter values for array of available scales
 my @scale_width =
-  map { $scales_map->{$_} == 1 ? $_ : undef }
-  sort { $a <=> $b } keys(%$scales_map);
+    map { $scales_map->{$_} == 1 ? $_ : undef }
+        sort { $a <=> $b } keys(%$scales_map);
 
 my $sha = Digest::SHA->new('sha256');
 
@@ -156,31 +156,31 @@ get '/get_images' => ( authenticated => 1 ) => sub {
 
     if (($page !~ /^\d+$/) || ($page <= 1)) { $page = 1}
     if (($items !~ /^\d+$/) || ($items <= 0)) { $items = 20}
-    
+
     # process images list
     my $req_result = $db->get_files( $current_user->{'user_id'}, $items , $page);
     my $files_list = $req_result->{'images_list'};
     my $pages_count = ceil($req_result->{'total_rows'}/$items);
 
     my $thumbs_dir =
-      File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'},
-        $thumbs_size );
+        File::Spec->catfile( $IMAGE_DIR, $current_user->{'user_id'},
+            $thumbs_size );
 
-    my @images = map { $_->{'file_name'} } @$files_list;
+    my @images = map { $_->file_name } @$files_list;
 
     my $images = [];
 
     for my $img_item (@$files_list) {
-        my $file     = $img_item->{'file_name'};
+        my $file     = $img_item->file_name;
         my $img_hash = {};
-        $img_hash->{'id'} = $img_item->{'file_id'};
-        $img_hash->{'filename'} = $img_item->{'original_filename'};
+        $img_hash->{'id'} = $img_item->file_id;
+        $img_hash->{'filename'} = $img_item->original_filename;
         $img_hash->{'original_url'} =
-          File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'},
-            $ORIG_DIR, $file );
+            File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'},
+                $ORIG_DIR, $file );
         $img_hash->{'thumbnail_url'} =
-          File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'},
-            $thumbs_size, $file );
+            File::Spec->catfile( '/', $IMAGE_BASE, $current_user->{'user_id'},
+                $thumbs_size, $file );
 
         my @scaled = ();
         for my $scale (@scale_width) {
@@ -196,14 +196,13 @@ get '/get_images' => ( authenticated => 1 ) => sub {
                     }
                 );
             }
-
         }
 
         $img_hash->{'scales'} = \@scaled;
 
         push( @$images, $img_hash );
 
-        
+
     }
 
     my $reply_data = { current_page => $page, items_per_page => $items, pages_count => $pages_count, images_list => $images };
@@ -252,31 +251,52 @@ post '/upload' => ( authenticated => 1 ) => sub {
     # Image file
     my $filename = sprintf( '%s.%s', create_hash( $image->slurp() ), $ext );
     my $image_file =
-      File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
+        File::Spec->catfile( get_path( $user_id, $ORIG_DIR ), $filename );
 
     # Save to file
     $image->move_to($image_file);
 
-    
-    my $promise = store_image($image_file, $image->filename, $user_id);
-    
+    my $imager = Imager->new();
+    $imager->read( file => $image_file ) or die $imager->errstr;
+
+    my $promise = store_image($imager , $filename, $image->filename, $user_id);
+
     #TODO: add errors handling
     Mojo::Promise->all($promise)->then(sub {
+        $log->debug(Dumper(\@_));
+        my $res = shift;
+        save_tags($imager, $res->[1]);
+
         $self->render(
-                json => {
-                    files => [
-                        {
-                            name         => $image->filename,
-                            size         => $image->size,
-                            url          => sprintf( '/images/orig/%s', $filename ),
-                            thumbnailUrl => sprintf( '/images/200/%s', $filename ),
-                        }
-                    ]
-                }
-            );
+            json => {
+                files => [
+                    {
+                        name         => $image->filename,
+                        size         => $image->size,
+                        url          => sprintf( '/images/orig/%s', $filename ),
+                        thumbnailUrl => sprintf( '/images/200/%s', $filename ),
+                    }
+                ]
+            }
+        );
     })->wait;
 
 } => 'upload';
+
+post '/album' => ( authenticated => 1 ) => sub {
+    my $self = shift;
+
+    my $user_id    = $self->current_user()->{'user_id'};
+    my $album_name = $self->req->param('album_name');
+    my $album_desc = $self->req->param('album_desc') || '';
+
+    my $album = $db->add_album($user_id, $album_name, $album_desc);
+    $self->render(
+        json => { album_id => $album->album_id,
+            album_name     => $album->album_name
+        }
+    )
+};
 
 sub create_hash {
     my $data_to_hash = shift;
@@ -295,7 +315,8 @@ sub get_path {
 }
 
 sub store_image {
-    my $image_file = shift;
+    my $imager = shift;
+    my $filename = shift;
     my $original_filename = shift;
     my $user_id = shift;
 
@@ -303,12 +324,6 @@ sub store_image {
     # Process and store uploaded file in a separate process
     Mojo::IOLoop->subprocess(
         sub {
-            my $subprocess = shift;
-
-            my $filename = fileparse($image_file);
-            my $imager = Imager->new();
-            $imager->read( file => $image_file ) or die $imager->errstr;
-
             #http://sylvana.net/jpegcrop/exif_orientation.html
             #http://myjaphoo.de/docs/exifidentifiers.html
             my $rotation_angle = $imager->tags( name => "exif_orientation" ) || 1;
@@ -335,16 +350,17 @@ sub store_image {
 
                 $scaled->write( file =>
                     File::Spec->catfile( get_path( $user_id, $scale ), $filename ) )
-                or die $scaled->errstr;
+                    or die $scaled->errstr;
             }
 
-            if ( !$db->add_file( $user_id, $filename, $original_filename ) ) {
-
+            my $file_info = $db->add_file( $user_id, $filename, $original_filename );
+            if ( !defined $file_info ) {
                 $log->error(sprintf('Can\'t save file %s', $filename));
                 die sprintf('Can\'t save file %s', $filename);
             }
 
-            return $filename;
+
+            return $file_info->file_id;
         },
         sub {
             my ($subprocess, $err, @results) = @_;
@@ -355,6 +371,20 @@ sub store_image {
     );
 
     return $promise;
+}
+
+sub save_tags {
+    my $image = shift;
+    my $db_file_id = shift;
+
+#    $log->debug(Dumper($image->tags()));
+    my @tags = $image->tags();
+#    $log->debug(Dumper(\@tags));
+    for my $tag (@tags) {
+        $log->debug(sprintf("tag: [%s] [%s]", $tag->[0], $tag->[1]));
+        my $row = $db->save_tag($db_file_id, $tag->[0], $tag->[1]);
+#        $log->debug(Dumper($row));
+    }
 }
 
 Mojo::IOLoop->start;

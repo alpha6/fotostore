@@ -377,14 +377,11 @@ sub save_tags {
     my $image = shift;
     my $db_file_id = shift;
 
-#    $log->debug(Dumper($image->tags()));
     my @tags = $image->tags();
-#    $log->debug(Dumper(\@tags));
-    for my $tag (@tags) {
-        $log->debug(sprintf("tag: [%s] [%s]", $tag->[0], $tag->[1]));
-        my $row = $db->save_tag($db_file_id, $tag->[0], $tag->[1]);
-#        $log->debug(Dumper($row));
-    }
+
+    my %tags_data = map { $_->[0] => $_->[1]} @tags;
+    $db->save_tags($db_file_id, \%tags_data);
+
 }
 
 Mojo::IOLoop->start;

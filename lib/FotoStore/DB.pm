@@ -8,7 +8,7 @@ use feature qw(signatures say);
 no warnings qw(experimental::signatures);
 
 use Data::Dumper;
-use DBIx::Struct;
+use DBIx::Struct qw(connector);
 
 
 
@@ -93,15 +93,27 @@ sub add_album($self, $user_id, $album_name, $album_desc) {
 }
 
 sub save_tag($self, $db_file_id, $tag_name, $tag_value) {
-    say STDERR ("[$db_file_id][$tag_name][$tag_value]");
     eval {
         my $row = new_row('exif_data', 'exif_tag' => $tag_name, 'tag_data' => $tag_value,'image_id' => $db_file_id, deleted => 0) || die "error!";
-        say STDERR (Dumper($row));
         return $row;
     };
     if ($@) {
       say STDERR ("Error! $@");
     }
+}
+
+sub save_tags($self, $db_file_id, $tag_data) {
+    eval {
+        connector->txn(sub {
+            for my $key (keys %$tag_data) {
+                $self->save_tag($db_file_id, $key, $tag_data->{$key});
+            }
+        });
+    };
+    if ($@) {
+        say STDERR ("Error! $@");
+    }
+
 }
 
 

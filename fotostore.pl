@@ -263,7 +263,6 @@ post '/upload' => ( authenticated => 1 ) => sub {
 
     #TODO: add errors handling
     Mojo::Promise->all($promise)->then(sub {
-        $log->debug(Dumper(\@_));
         my $res = shift;
         save_tags($imager, $res->[1]);
 

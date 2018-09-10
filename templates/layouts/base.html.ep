@@ -26,7 +26,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Rough, Slow, Stupid, Contrary Photohosting</a>
+          <a class="navbar-brand" href="/">Tiny images hosting</a>
         </div>
         <div class="navbar-collapse collapse">
         <% if (!is_user_authenticated()) { %>        
